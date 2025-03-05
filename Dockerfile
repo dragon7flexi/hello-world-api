@@ -1,14 +1,30 @@
-FROM golang:1.20
+# Step 1: Build the Go application
+FROM golang:1.19 as build
 
 WORKDIR /app
 
+# Copy go mod and sum files
 COPY go.mod go.sum ./
-RUN go mod download
 
+# Install dependencies
+RUN go mod tidy
+
+# Copy the source code
 COPY . .
 
-RUN go build -o main .
+# Build the Go app
+RUN go build -o myapp .
 
-EXPOSE 8080
+# Step 2: Create the final image with the prebuilt Go app
+FROM debian:bullseye-slim
 
-CMD [ "./main" ]
+WORKDIR /root/
+
+# Copy the compiled Go binary from the build stage
+COPY --from=build /app/myapp .
+
+# Expose the port that the app will run on (adjust if necessary)
+EXPOSE 80
+
+# Command to run the Go application
+CMD ["./myapp"]
